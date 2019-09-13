@@ -1,0 +1,7 @@
+<div>
+  <h2>Video</h2>
+  <div *ngFor="let item of list">
+    <button (click)="changeScreen(item.name)">{{item.name}}</button>
+  </div>
+  <video class="myvideo"></video>
+</div>
