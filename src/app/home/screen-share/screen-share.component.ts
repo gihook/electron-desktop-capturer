@@ -28,19 +28,19 @@ export class ScreenShareComponent implements OnInit {
       for (const source of sources) {
         if (source.name === newSource) {
           try {
-            const stream = await navigator.mediaDevices.getUserMedia({
+            const stream = await (<any> navigator.mediaDevices).getUserMedia({
               audio: false,
-              video: true
-              // {
-              //   mandatory: {
-              //     chromeMediaSource: 'desktop',
-              //     chromeMediaSourceId: source.id,
-              //     minWidth: 1280,
-              //     maxWidth: 1280,
-              //     minHeight: 720,
-              //     maxHeight: 720
-              //   }
-              // }
+              video:
+              {
+                mandatory: {
+                  chromeMediaSource: 'desktop',
+                  chromeMediaSourceId: source.id,
+                  minWidth: 1280,
+                  maxWidth: 1280,
+                  minHeight: 720,
+                  maxHeight: 720
+                }
+              }
             });
             handleStream(stream);
           } catch (e) {
