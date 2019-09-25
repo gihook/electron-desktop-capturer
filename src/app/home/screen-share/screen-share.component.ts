@@ -8,36 +8,39 @@ import { desktopCapturer, DesktopCapturerSource } from 'electron';
 })
 export class ScreenShareComponent implements OnInit {
 
-  selectedSource: DesktopCapturerSource;
+  selectedSource: String;
   list: DesktopCapturerSource[];
 
   constructor() { }
 
   ngOnInit() {
-    this.desktopCapturing(null);
+    this.desktopCapturing();
   }
 
-  desktopCapturing(newSource: string) {
+  desktopCapturing(newSource?: string) {
     desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources => {
-
       this.list = sources;
-      this.selectedSource = sources[0];
+      if (newSource === null) {
+        newSource = this.list[0].name;
+      }
+      console.log(this.list);
+      this.selectedSource = sources[0].name;
       for (const source of sources) {
         if (source.name === newSource) {
           try {
             const stream = await navigator.mediaDevices.getUserMedia({
               audio: false,
-              video:
-              {
-                mandatory: {
-                  chromeMediaSource: 'desktop',
-                  chromeMediaSourceId: source.id,
-                  minWidth: 1280,
-                  maxWidth: 1280,
-                  minHeight: 720,
-                  maxHeight: 720
-                }
-              }
+              video: true
+              // {
+              //   mandatory: {
+              //     chromeMediaSource: 'desktop',
+              //     chromeMediaSourceId: source.id,
+              //     minWidth: 1280,
+              //     maxWidth: 1280,
+              //     minHeight: 720,
+              //     maxHeight: 720
+              //   }
+              // }
             });
             handleStream(stream);
           } catch (e) {
