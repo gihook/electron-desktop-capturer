@@ -20,7 +20,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    const isInitiator = location.hash === '#1';
+
+  }
+
+  createConnection(): void {
+    const isInitiator = true;
     console.log({ isInitiator });
 
     if (!isInitiator) return;

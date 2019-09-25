@@ -1,6 +1,6 @@
 import { fromEvent, Observable } from 'rxjs';
 
-const SimplePeer = window['SimplePeer'];
+import SimplePeer from 'simple-peer';
 
 export class BetterSimplePeer {
   peer;
