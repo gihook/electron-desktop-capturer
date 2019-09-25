@@ -148,7 +148,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
             });
             console.log('desktop',streamDesktop);
             that.desktopElement.nativeElement.srcObject = streamDesktop;
-            that.desktopElement.nativeElement.srcObject.play();
+            that.desktopElement.nativeElement.play();
 
           } catch (e) {
             console.log(e);
