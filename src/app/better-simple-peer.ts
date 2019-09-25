@@ -1,15 +1,26 @@
 import { fromEvent, Observable } from 'rxjs';
-
 import SimplePeer from 'simple-peer';
 
 export class BetterSimplePeer {
   peer;
 
-  constructor(initiator?: boolean) {
+  constructor(options: {
+    sdpData?: any,
+    stream?: MediaStream,
+    onConnect: (() => void),
+    onRemoteStream: ((stream: MediaStream) => void)
+  }) {
+    const { sdpData, stream, onConnect, onRemoteStream } = options;
+    const initiator = sdpData === undefined;
+
     this.peer = new SimplePeer({
       initiator,
+      stream,
       trickle: false
     });
+
+    this.peer.on('connect', () => onConnect());
+    this.peer.on('stream', (remoteStream: MediaStream) => onRemoteStream(remoteStream));
   }
 
   setSdp(sdp) {
@@ -17,38 +28,6 @@ export class BetterSimplePeer {
   }
 
   sdp$(): Observable<{ type: string, sdp: string }> {
-    return fromEvent(this.peer, 'signal');
-  }
-
-  tracks$() {
-    return fromEvent(this.peer, 'tracks');
-  }
-
-  stream$(): Observable<MediaStream> {
-    return fromEvent(this.peer, 'stream');
-  }
-
-  error$() {
-    return fromEvent(this.peer, 'error');
-  }
-
-  connect$() {
-    return fromEvent(this.peer, 'connect');
-  }
-
-  addStream(stream: MediaStream) {
-    this.peer.addStream(stream);
-  }
-
-  addTrack(track: MediaStreamTrack, stream: MediaStream) {
-    this.peer.addStream(track, stream);
-  }
-
-  removeStream(stream: MediaStream) {
-    this.peer.removeStream(stream);
-  }
-
-  removeTrack(track: MediaStreamTrack, stream: MediaStream) {
-    this.peer.removeTrack(track, stream);
+    return fromEvent(this.peer, 'sdp');
   }
 }

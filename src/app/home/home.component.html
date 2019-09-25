@@ -1,4 +1,3 @@
-<!-- <app-screen-share></app-screen-share> -->
 <button (click)="createConnection()">Create connection</button>
 <form (submit)="setOffer(offer.value, $event)">
   Set Offer
@@ -17,7 +16,7 @@
   <button (click)="removeStreamFromConnection()">Remove camera</button>
   <button (click)="addAudioTrack()">Add audio track</button>
   <button (click)="addVideoTrack()">Add video track</button>
-  <button (click)="desktopCapturing()">Add desktop stream</button>
+  <button (click)="loadSharingOptions()">Add desktop stream</button>
   <button (click)="removeVideoTrack()">Remove video track</button>
 </div>
 <div>{{ outgoing }}</div>
@@ -38,4 +37,7 @@
     </div>
     <video [srcObject]="desktop" autoplay #desktopElement hidden></video>
   </div>
+</div>
+<div *ngFor="let source of desktopSources">
+  <img [ngClass]="{ active: source.id === selectedSourceId }" [src]="source.thumbnail.toDataURL()" (click)="setLocalStream(source.id)">
 </div>

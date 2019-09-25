@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component } from '@angular/core';
 import { BetterSimplePeer } from '../better-simple-peer';
 import { getUserMedia } from '../media-helpers';
 import { desktopCapturer, DesktopCapturerSource } from 'electron';
@@ -8,163 +8,83 @@ import { desktopCapturer, DesktopCapturerSource } from 'electron';
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit, AfterViewInit {
-  // @ts-ignore
-  @ViewChild('desktopElement') desktopElement: ElementRef;
+export class HomeComponent {
   outgoing: string;
-  desktop: any = null;
-  title = 'simple-peer-test';
-  msg = 'test';
+  desktopStream: any = null;
   stream: MediaStream;
   remoteStream: MediaStream;
   peer: BetterSimplePeer;
   newPeer: BetterSimplePeer;
-  selectedSource: String;
-  list: DesktopCapturerSource[];
-  ngOnInit(): void {
-  }
-
-  ngAfterViewInit(): void {
-
-  }
-
-  createConnection(): void {
-    const isInitiator = true;
-    console.log({ isInitiator });
-
-    if (!isInitiator) { return; }
-
-    this.peer = this.createPeer(isInitiator);
-  }
+  desktopSources: DesktopCapturerSource[];
+  selectedSourceId: string;
 
   setOutgoing(value: string) {
     this.outgoing = value;
   }
 
-  private createPeer(isInitiator) {
-    const peer = new BetterSimplePeer(isInitiator);
-    peer.sdp$().subscribe(sdp => {
-      console.log({ sdp });
-      this.setOutgoing(JSON.stringify(sdp));
+  private createPeer({ sdp, stream }) {
+    const peer = new BetterSimplePeer({
+      sdpData: sdp,
+      stream,
+      onRemoteStream: remoteStream => this.remoteStream = remoteStream,
+      onConnect: () => console.log('connected')
     });
 
-    peer.error$().subscribe(error => console.log({ error }));
-    peer.connect$().subscribe(connect => console.log({ connect }));
-    peer.tracks$().subscribe(trackData => console.log({ trackData }));
-
-    peer.stream$().subscribe(stream => {
-      console.log({ stream });
-      this.remoteStream = stream;
-    });
-    console.log(this.remoteStream);
     return peer;
   }
 
   setAnswer(sdpValue: string, event) {
-    if (!sdpValue) { return; }
+    if (!sdpValue) return;
 
-    console.log('setting answer');
     event.preventDefault();
     const sdp = JSON.parse(sdpValue);
     this.peer.setSdp(sdp);
   }
 
   setOffer(sdpValue: string, event) {
-    if (!sdpValue) { return; }
+    if (!sdpValue) return;
 
     event.preventDefault();
     const sdp = JSON.parse(sdpValue);
-    const newPeer = this.createPeer(false);
-
-    if (this.stream) {
-      newPeer.addStream(this.stream);
-    }
-
-    newPeer.setSdp(sdp);
+    const newPeer = this.createPeer({ stream: this.stream, sdp });
     this.peer = newPeer;
-  }
-
-  send() {
-    // this.p.send(this.msg);
-    // this.msg = '';
   }
 
   async turnOnCamera() {
     const stream = await getUserMedia({ audio: true, video: true });
-    console.log('turned on');
-    console.log({ stream });
     this.stream = stream;
   }
 
-  turnOfCamera() {
-    // this.myVideo.nativeElement.srcObject = null;
-  }
-
   async addStreamToConnection() {
-    const newPeer = this.createPeer(true);
-    newPeer.addStream(this.stream);
+    const newPeer = this.createPeer({ stream: this.stream, sdp: undefined });
     this.peer = newPeer;
   }
 
-  async removeStreamFromConnection() {
-    this.peer.removeStream(this.stream);
-  }
-
-  addAudioTrack() {
-    this.peer.addTrack(this.stream.getAudioTracks()[0], this.stream);
-  }
-
-  addVideoTrack() {
-    this.peer.addTrack(this.stream.getVideoTracks()[0], this.stream);
-  }
-
-  removeVideoTrack() {
-    this.peer.removeTrack(this.stream.getVideoTracks()[0], this.stream);
-  }
-
-  async desktopCapturing(newSource?: string) {
+  async loadSharingOptions() {
     const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] });
-      this.list = sources;
+    this.desktopSources = sources;
+  }
 
-      console.log(this.list);
-      this.selectedSource = sources[0].name;
-      for (const source of sources.filter(s => s.name === newSource)) {
-          try {
-            const streamDesktop = await (<any>navigator.mediaDevices).getUserMedia({
-              audio: false,
-              video:
-              {
-                mandatory: {
-                  chromeMediaSource: 'desktop',
-                  chromeMediaSourceId: source.id,
-                  minWidth: 1280,
-                  maxWidth: 1280,
-                  minHeight: 720,
-                  maxHeight: 720
-                }
-              }
-            });
-
-            this.handleStream(streamDesktop);
-          } catch (e) {
-            console.log(e);
-          }
-          return;
+  async getDesktopStream(sourceId: string) {
+    const desktopStream = await (<any>navigator.mediaDevices).getUserMedia({
+      audio: false,
+      video: {
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: sourceId,
+          minWidth: 1280,
+          maxWidth: 1280,
+          minHeight: 720,
+          maxHeight: 720
+        }
       }
+    });
+
+    return desktopStream;
   }
 
-  handleStream(stream: MediaStream) {
-    console.log('desktop', stream);
-
-    if (!this.stream) {
-      this.stream = stream;
-    } else {
-      this.stream.getVideoTracks().forEach(t => this.stream.removeTrack(t));
-      stream.getVideoTracks().forEach(t => this.stream.addTrack(t));
-    }
-
-    this.addStreamToConnection();
-    this.desktopElement.nativeElement.srcObject = stream;
+  async setLocalStream(sourceId: string) {
+    this.stream = await this.getDesktopStream(sourceId);
+    this.selectedSourceId = sourceId;
   }
-
 }
