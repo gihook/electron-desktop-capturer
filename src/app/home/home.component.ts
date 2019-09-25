@@ -1,6 +1,7 @@
-import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
+import {Component, OnInit, AfterViewInit, ViewChild, ElementRef} from '@angular/core';
 import {BetterSimplePeer} from '../better-simple-peer';
 import {getUserMedia} from '../media-helpers';
+import { desktopCapturer, DesktopCapturerSource } from 'electron';
 
 @Component({
   selector: 'app-home',
@@ -8,14 +9,18 @@ import {getUserMedia} from '../media-helpers';
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit, AfterViewInit {
+  // @ts-ignore
+  @ViewChild('desktopElement') desktopElement: ElementRef;
   outgoing: string;
+  desktop: any = null;
   title = 'simple-peer-test';
   msg = 'test';
   stream: MediaStream;
   remoteStream: MediaStream;
   peer: BetterSimplePeer;
   newPeer: BetterSimplePeer;
-
+  selectedSource: String;
+  list: DesktopCapturerSource[];
   ngOnInit(): void {
   }
 
@@ -115,4 +120,43 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.peer.removeTrack(this.stream.getVideoTracks()[0], this.stream);
   }
 
+  desktopCapturing(newSource?: string) {
+    const that = this;
+    desktopCapturer.getSources({types: ['window', 'screen']}).then(async sources => {
+      this.list = sources;
+      if (newSource === null) {
+        newSource = this.list[0].name;
+      }
+      console.log(this.list);
+      this.selectedSource = sources[0].name;
+      for (const source of sources) {
+        if (source.name === this.list[0].name) {
+          try {
+            const streamDesktop = await (<any>navigator.mediaDevices).getUserMedia({
+              audio: false,
+              video:
+                {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+                  chromeMediaSourceId: source.id,
+                  minWidth: 1280,
+                  maxWidth: 1280,
+                  minHeight: 720,
+                  maxHeight: 720
+              }
+            }
+            });
+            console.log('desktop',streamDesktop);
+            that.desktopElement.nativeElement.srcObject = streamDesktop;
+            that.desktopElement.nativeElement.srcObject.play();
+
+          } catch (e) {
+            console.log(e);
+          }
+          return;
+        }
+      }
+    });
+
+  }
 }

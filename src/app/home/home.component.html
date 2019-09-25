@@ -17,6 +17,7 @@
   <button (click)="removeStreamFromConnection()">Remove camera</button>
   <button (click)="addAudioTrack()">Add audio track</button>
   <button (click)="addVideoTrack()">Add video track</button>
+  <button (click)="desktopCapturing()">Add desktop stream</button>
   <button (click)="removeVideoTrack()">Remove video track</button>
 </div>
 <div>{{ outgoing }}</div>
@@ -29,5 +30,9 @@
   <div *ngIf="remoteStream">
     Remote video
     <video [srcObject]="remoteStream" autoplay></video>
+  </div>
+  <div >
+    Desktop
+    <video [srcObject]="desktop" autoplay #desktopElement></video>
   </div>
 </div>
