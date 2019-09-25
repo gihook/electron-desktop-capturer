@@ -1,5 +1,6 @@
 import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
-import SimplePeer from 'simple-peer';
+import {BetterSimplePeer} from '../better-simple-peer';
+import {getUserMedia} from '../media-helpers';
 
 @Component({
   selector: 'app-home',
@@ -7,132 +8,107 @@ import SimplePeer from 'simple-peer';
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit, AfterViewInit {
-
-  // @ts-ignore
-  @ViewChild('myvideo') myVideo: any;
-
+  outgoing: string;
   title = 'simple-peer-test';
-  public msg = 'test';
-  public p = null;
-  n = <any>navigator;
-  stream = null;
+  msg = 'test';
+  stream: MediaStream;
+  remoteStream: MediaStream;
+  peer: BetterSimplePeer;
+  newPeer: BetterSimplePeer;
 
   ngOnInit(): void {
-    this.turnOnCamera();
   }
 
   ngAfterViewInit(): void {
+    const isInitiator = location.hash === '#1';
+    console.log({ isInitiator });
 
-    console.log(document.querySelector('#incoming'));
+    if (!isInitiator) return;
 
-    // @ts-ignore
-    this.p = new SimplePeer({
-      initiator: location.hash === '#1',
-      trickle: false,
-      streams: []
+    this.peer = this.createPeer(isInitiator);
+  }
+
+  setOutgoing(value: string) {
+    this.outgoing = value;
+  }
+
+  private createPeer(isInitiator) {
+    const peer = new BetterSimplePeer(isInitiator);
+    peer.sdp$().subscribe(sdp => {
+      console.log({ sdp });
+      this.setOutgoing(JSON.stringify(sdp));
     });
 
-    this.p.on('error', err => console.log('error', err));
+    peer.error$().subscribe(error => console.log({ error }));
+    peer.connect$().subscribe(connect => console.log({ connect }));
+    peer.tracks$().subscribe(trackData => console.log({ trackData }));
 
-    this.p.on('signal', data => {
-      console.log('SIGNAL', JSON.stringify(data));
-      document.querySelector('#outgoing').textContent = JSON.stringify(data);
+    peer.stream$().subscribe(stream => {
+      console.log({ stream });
+      this.remoteStream = stream;
     });
 
-    document.querySelector('form').addEventListener('submit', ev => {
-      ev.preventDefault();
-      // @ts-ignore
-      this.p.signal(JSON.parse(document.querySelector('#incoming').value));
-    });
+    return peer;
+  }
 
-    this.p.on('connect', () => {
-      console.log('CONNECT');
-      this.p.send('whatever' + Math.random());
-    });
+  setAnswer(sdpValue: string, event) {
+    if (!sdpValue) return;
 
-    this.p.on('data', data => {
-      console.log('data: ' + data);
-    });
+    console.log('setting answer');
+    event.preventDefault();
+    const sdp = JSON.parse(sdpValue);
+    this.peer.setSdp(sdp);
+  }
 
-    // this.p.on('stream', stream => {
-    //   // got remote video stream, now let's show it in a video tag
-    //
-    //   this.myVideo.nativeElement.srcObject = stream;
-    //   this.myVideo.nativeElement.play();
-    //   console.log(stream);
-    // });
+  setOffer(sdpValue: string, event) {
+    if (!sdpValue) return;
 
-    this.p.on('track', (track, stream) => {
-      console.log('track');
-    });
-    this.p.on('stream', stream => {
-      console.log('stream', stream);
-      this.myVideo.nativeElement.srcObject = stream;
-      this.myVideo.nativeElement.play();
-    });
+    event.preventDefault();
+    const sdp = JSON.parse(sdpValue);
+    const newPeer = this.createPeer(false);
 
+    if (this.stream) newPeer.addStream(this.stream);
+
+    newPeer.setSdp(sdp);
+    this.peer = newPeer;
   }
 
   send() {
-    this.p.send(this.msg);
-    this.msg = '';
+    // this.p.send(this.msg);
+    // this.msg = '';
   }
 
-  gotDevices() {
-
-  }
-
-  turnOnCamera() {
-    let that = this;
-    const video = that.myVideo.nativeElement;
-    // this.n.mediaDevices.enumerateDevices()
-    //   .then((gotDevices) =>  {
-    //     console.log(gotDevices);
-    //     const devices =  gotDevices.filter((item) => item.kind === 'videoinput');
-    //     return devices;
-    //   })
-    //   .then((getStream) => {
-    //     console.log(getStream[0]);
-    //   })
-    //   .catch((handleError) => console.log(handleError));
-
-    this.n.getUserMedia = (this.n.getUserMedia || this.n.webkitGetUserMedia || this.n.mozGetUserMedia || this.n.msGetUserMedia);
-    this.n.getUserMedia({ video: true, audio: true }, function (stream) {
-      that.stream = stream;
-      // that.myVideo.nativeElement.srcObject = stream;
-      // video.play();
-      console.log(that.stream.getAudioTracks());
-    }, function () { });
-
-
+  async turnOnCamera() {
+    const stream = await getUserMedia({ audio: true, video: true });
+    console.log('turned on');
+    console.log({ stream });
+    this.stream = stream;
   }
 
   turnOfCamera() {
-    this.myVideo.nativeElement.srcObject = null;
+    // this.myVideo.nativeElement.srcObject = null;
   }
 
   async addStreamToConnection() {
-
-    this.p.addStream(this.stream);
-
+    const newPeer = this.createPeer(true);
+    newPeer.addStream(this.stream);
+    this.peer = newPeer;
   }
 
   async removeStreamFromConnection() {
-
-    this.p.removeStream(this.stream);
-
+    this.peer.removeStream(this.stream);
   }
 
   addAudioTrack() {
-    this.p.addTrack(this.stream.getAudioTracks()[0], this.stream);
+    this.peer.addTrack(this.stream.getAudioTracks()[0], this.stream);
   }
 
   addVideoTrack() {
-    this.p.addTrack(this.stream.getVideoTracks()[0], this.stream);
+    this.peer.addTrack(this.stream.getVideoTracks()[0], this.stream);
   }
 
   removeVideoTrack() {
-    this.p.removeTrack(this.stream.getVideoTracks()[0], this.stream);
+    this.peer.removeTrack(this.stream.getVideoTracks()[0], this.stream);
   }
 
 }
