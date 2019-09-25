@@ -56,7 +56,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       console.log({ stream });
       this.remoteStream = stream;
     });
-
+    console.log(this.remoteStream);
     return peer;
   }
 
@@ -161,7 +161,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
     function handleStream(stream) {
       console.log('desktop', stream);
       that.desktopElement.nativeElement.srcObject = stream;
-      that.desktopElement.nativeElement.srcObject.play();
     }
 
   }
