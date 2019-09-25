@@ -1,6 +1,6 @@
-import {Component, OnInit, AfterViewInit, ViewChild, ElementRef} from '@angular/core';
-import {BetterSimplePeer} from '../better-simple-peer';
-import {getUserMedia} from '../media-helpers';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { BetterSimplePeer } from '../better-simple-peer';
+import { getUserMedia } from '../media-helpers';
 import { desktopCapturer, DesktopCapturerSource } from 'electron';
 
 @Component({
@@ -32,7 +32,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     const isInitiator = true;
     console.log({ isInitiator });
 
-    if (!isInitiator) return;
+    if (!isInitiator) { return; }
 
     this.peer = this.createPeer(isInitiator);
   }
@@ -61,7 +61,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   setAnswer(sdpValue: string, event) {
-    if (!sdpValue) return;
+    if (!sdpValue) { return; }
 
     console.log('setting answer');
     event.preventDefault();
@@ -70,13 +70,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   setOffer(sdpValue: string, event) {
-    if (!sdpValue) return;
+    if (!sdpValue) { return; }
 
     event.preventDefault();
     const sdp = JSON.parse(sdpValue);
     const newPeer = this.createPeer(false);
 
-    if (this.stream) newPeer.addStream(this.stream);
+    if (this.stream) {
+      newPeer.addStream(this.stream);
+    }
 
     newPeer.setSdp(sdp);
     this.peer = newPeer;
@@ -122,7 +124,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   desktopCapturing(newSource?: string) {
     const that = this;
-    desktopCapturer.getSources({types: ['window', 'screen']}).then(async sources => {
+    desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources => {
       this.list = sources;
       if (newSource === null) {
         newSource = this.list[0].name;
@@ -130,26 +132,24 @@ export class HomeComponent implements OnInit, AfterViewInit {
       console.log(this.list);
       this.selectedSource = sources[0].name;
       for (const source of sources) {
-        if (source.name === this.list[0].name) {
+        if (source.name === newSource) {
           try {
             const streamDesktop = await (<any>navigator.mediaDevices).getUserMedia({
               audio: false,
               video:
-                {
-              mandatory: {
-                chromeMediaSource: 'desktop',
+              {
+                mandatory: {
+                  chromeMediaSource: 'desktop',
                   chromeMediaSourceId: source.id,
                   minWidth: 1280,
                   maxWidth: 1280,
                   minHeight: 720,
                   maxHeight: 720
+                }
               }
-            }
             });
-            console.log('desktop',streamDesktop);
-            that.desktopElement.nativeElement.srcObject = streamDesktop;
-            that.desktopElement.nativeElement.srcObject.play();
 
+            handleStream(streamDesktop);
           } catch (e) {
             console.log(e);
           }
@@ -157,6 +157,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
         }
       }
     });
+
+    function handleStream(stream) {
+      console.log('desktop', stream);
+      that.desktopElement.nativeElement.srcObject = stream;
+      that.desktopElement.nativeElement.srcObject.play();
+    }
 
   }
 }

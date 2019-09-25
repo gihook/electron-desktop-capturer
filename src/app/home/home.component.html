@@ -31,8 +31,11 @@
     Remote video
     <video [srcObject]="remoteStream" autoplay></video>
   </div>
-  <div >
+  <div>
     Desktop
+    <div *ngFor="let item of list">
+      <button (click)="desktopCapturing(item.name)">{{item.name}}</button>
+    </div>
     <video [srcObject]="desktop" autoplay #desktopElement></video>
   </div>
 </div>
